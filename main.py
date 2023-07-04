@@ -12,12 +12,16 @@ from matplotlib import rcParams
 rcParams['figure.figsize'] = 15, 5
 sns.set_style('darkgrid')
 
-df_60s = pd.read_csv('dataset-of-60s.csv')
-print(df_60s.head())
-print(df_60s.info())
+df = [pd.read_csv(f'dataset-of-{decade}0s.csv') for decade in ['6', '7', '8', '9', '0', '1']]
+for i, decade in enumerate([1960, 1970, 1980, 1990, 2000, 2010]):
+    df[i]['decade'] = pd.Series(decade, index=df[i].index)
+data = pd.concat(df).reset_index(drop=True)
 
-df_60s.drop(labels=['track', 'artist', 'uri'], axis=1, inplace=True) # We do not need this as it will not affect our results.
-print(df_60s.info())
+print(data.head())
+print(data.info())
+
+data.drop(labels=['track', 'artist', 'uri'], axis=1, inplace=True) # We do not need this as it will not affect our results.
+print(data.info())
 
 # Data Cleanup
 # for track, group in df_60s.groupby('track'):
@@ -27,20 +31,19 @@ print(df_60s.info())
 ## Above is my attempt at cleaning up duplicate tracks that have different target values with the same artists.
 ## None of the songs have them, so it's perfectly clean.
 
-print(df_60s.columns)
+print(data.columns)
 
-print(df_60s.nunique(axis=0))
+print(data.nunique(axis=0))
 
-sns.countplot(x=df_60s['target'])
+sns.countplot(x=data['target'])
 plt.show()
 
-sns.heatmap(df_60s.corr(), annot=True)
+sns.heatmap(data.corr(), annot=True)
 plt.show()
 
-## Preprocessing
-
-x = df_60s.drop('target', axis=1)
-y = df_60s['target']
+# Preprocessing
+x = data.drop('target', axis=1)
+y = data['target']
 scaler = StandardScaler()
 x_scaled = scaler.fit_transform(x)
 x = pd.DataFrame(data=x_scaled, columns=x.columns)
@@ -60,7 +63,7 @@ print(f"\nFalse Negatives: {cm[1, 1]}")
 
 print(classification_report(y_test, predictions))
 
-## Hyperparameter tuning
+# Hyperparameter tuning
 param_grid = {'C': [0.1, 1, 10, 100, 1000], 'gamma': [1, 0.1, 0.01, 0.001, 0.0001], 'kernel': ['rbf']}
 grid = GridSearchCV(SVC(), param_grid, refit=True,verbose=3)
 grid.fit(x_train, y_train)
