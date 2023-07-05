@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.svm import SVC
+from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 
 from matplotlib import rcParams
@@ -49,26 +50,29 @@ x_scaled = scaler.fit_transform(x)
 x = pd.DataFrame(data=x_scaled, columns=x.columns)
 print(x.head())
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=101)
-model = SVC()
-model.fit(x_train, y_train)
+# # Explained Variance Ratio
+# pca = PCA()
+# pca.fit(x)
+# cum_vari = np.cumsum(pca.explained_variance_ratio_)
+# plt.plot(range(1, len(cum_vari) + 1), cum_vari)
+# plt.show()
 
-predictions = model.predict(x_test)
-cm = confusion_matrix(y_test, predictions)
+pca = PCA(n_components=11)
+x_pca = pca.fit_transform(x)
+x_train_pca, x_test_pca, y_train, y_test = train_test_split(x_pca, y, test_size=0.3)
+model_pca = SVC()
+model_pca.fit(x_train_pca, y_train)
+predictions_pca = model_pca.predict(x_test_pca)
+cm = confusion_matrix(y_test, predictions_pca)
 print(cm)
-print(f"True Positives: {cm[0, 0]}")
-print(f"\nTrue Negatives: {cm[0, 1]}")
-print(f"\nFalse Positives: {cm[1, 0]}")
-print(f"\nFalse Negatives: {cm[1, 1]}")
-
-print(classification_report(y_test, predictions))
+print(classification_report(y_test, predictions_pca))
 
 # Hyperparameter tuning
 param_grid = {'C': [0.1, 1, 10, 100, 1000], 'gamma': [1, 0.1, 0.01, 0.001, 0.0001], 'kernel': ['rbf']}
 grid = GridSearchCV(SVC(), param_grid, refit=True,verbose=3)
-grid.fit(x_train, y_train)
+grid.fit(x_train_pca, y_train)
 print(grid.best_params_)
 
-grid_predictions = grid.predict(x_test)
+grid_predictions = grid.predict(x_test_pca)
 print(confusion_matrix(y_test, grid_predictions))
 print(classification_report(y_test, grid_predictions))
